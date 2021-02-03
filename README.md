@@ -1,3 +1,3 @@
 # bosslikeBot
 ### Enabled programs:
-1)liker for https://bosslike.ru site
+1) liker for https://bosslike.ru site (+ runner and killer)
