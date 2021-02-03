@@ -8,40 +8,45 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-import time
-import copy
 import selenium
-import curses
+import time
 import sys
-import signal
 import random
 import datetime
-
-driver_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"
-driver_exec_path = '/Users/andryusha/Desktop/chromedriver'
-driver_max_windows_opened = 2
-
-bosslike_url_auth = 'http://bosslike.ru/login/'
-bosslike_url_likes = 'http://bosslike.ru/tasks/instagram/like/'
-bosslike_refresh_treshhold = 4
-bosslike_udata_path = 'udata/bosslike_data.txt'
-
-insta_url_auth = 'https://www.instagram.com/accounts/login/'
-insta_udata_path = 'udata/insta_data.txt'
+import os
+import constant
 
 def rand_time(min, max):
+	'''
+	@brief: function to get random float from {[min, max] + noise}, where noise < 1
+	
+		@min: 	minimal value
+		@max: 	maximum value
+	'''
 	noise = random.randint(0,100)/100.0
 	return random.randint(min, max) + noise
 
 
 def read_user_data(filename):
+	'''
+	@brief: function to get user's auth data
+
+		@filename: 	source file with user's auth data
+	'''
 	data = []
 	with open(filename, 'r') as f:
 		data = f.read().splitlines()
 	return data[0], data[1]
 
 def auth_bosslike(browser, username, password):
-	browser.get(bosslike_url_auth)
+	'''
+	@brief: function to auth on bosslike.ru
+
+		@browser: 	actual browser object
+		@username:	username to set
+		@password:	password to set (plain text, no md5)
+	'''
+	browser.get(constant.BOSSLIKE_URL_AUTH)
 	log = browser.find_element_by_id('User_loginLogin')
 	passw = browser.find_element_by_id('User_passwordLogin')
 	log.send_keys(username)
@@ -53,10 +58,23 @@ def auth_bosslike(browser, username, password):
 	pass
 
 def get_user_balance(browser):
+	'''
+	@brief: function to get user's balance at bosslike.ru. 
+			To get balance current window must be bosslike.ru.
+
+		@browser: 	actual browser object
+	'''
 	return browser.find_element_by_id("user_points_balance").text
 
 def auth_insta(browser, username, password):
-	browser.get(insta_url_auth)
+	'''
+	@brief: function to auth on instagram.com
+
+		@browser: 	actual browser object
+		@username:	username to set
+		@password:	password to set (plain text, no md5)
+	'''
+	browser.get(constant.INSTAGRAM_URL_AUTH)
 	time.sleep(.8)
 	log = browser.find_element_by_xpath('//input[@name="username"]')
 	log.send_keys(username)
@@ -70,15 +88,19 @@ def auth_insta(browser, username, password):
 	pass
 
 if __name__ == '__main__':
+	args = sys.argv
+	is_backgr_proc = True if '-s' in args else False
+
 	#driver start
 	opts = Options()
-	opts.headless = True
-	opts.add_argument("user-agent={}".format(driver_user_agent))
-	browser = webdriver.Chrome(driver_exec_path, options=opts)
+	opts.headless = True if is_backgr_proc else False
+
+	opts.add_argument("user-agent={}".format(constant.DRIVER_USER_AGENT))
+	browser = webdriver.Chrome(constant.DRIVER_EXEC_PATH, options=opts)
 
 	#auth bosslike + instagram
-	bosslike_username, bosslike_password = read_user_data(bosslike_udata_path)
-	insta_username, insta_password = read_user_data(insta_udata_path)
+	bosslike_username, bosslike_password = read_user_data(constant.BOSSLIKE_UDATA_PATH)
+	insta_username, insta_password = read_user_data(constant.INSTAGRAM_UDATA_PATH)
 
 	auth_bosslike(browser, bosslike_username, bosslike_password)
 	time.sleep(1)
@@ -86,12 +108,16 @@ if __name__ == '__main__':
 	time.sleep(1)
 	
 	#go to bosslike
-	browser.get(bosslike_url_likes)
+	browser.get(constant.BOSSLIKE_URL_LIKE)
 	main_window = browser.current_window_handle
 
 	#statistics
 	done = 0
 	failed = 0
+	refresher = 0
+	prev_balance = ''
+	balance = ''
+	
 	print('\n')
 
 	while True:
@@ -109,10 +135,10 @@ if __name__ == '__main__':
 		time.sleep(2)
 		chwd = browser.window_handles
 
-		if len(chwd) != driver_max_windows_opened:
+		if len(chwd) != constant.DRIVER_MAX_WINDOW_OPENED:
 			failed += 1
-			if failed > bosslike_refresh_treshhold:
-				browser.get(bosslike_url_likes)
+			if failed > constant.BOSSLIKE_REFRESH_TRESHOLD:
+				browser.get(constant.BOSSLIKE_URL_LIKE)
 				time.sleep(3)
 				failed = 0
 			continue
@@ -141,10 +167,24 @@ if __name__ == '__main__':
 
 			time.sleep(3)
 			done += 1
-		if failed > bosslike_refresh_treshhold:
-			browser.get(bosslike_url_likes)
+		if failed > constant.BOSSLIKE_REFRESH_TRESHOLD:
+			browser.get(constant.BOSSLIKE_URL_LIKE)
 			time.sleep(3)
 			failed = 0
+		prev_balance = balance
+		balance = get_user_balance(browser)
+		if balance == prev_balance:
+			refresher += 1
+		else:
+			refresher = 0
+		if refresher == constant.BOSSLIKE_REFRESH_TRESHOLD:
+			refresher = 0
+			print("Starting new process")
+			browser.close()
+			time.sleep(2)
+			os.system('python {} &'.format(constant.PY_EXEC_FILENAME_LIKES))
+			os.system('kill -9 {}'.format(os.getpid()))
+
 		#each cycle print data
 		print("{} ---- {}".format(str(datetime.datetime.now().time()).split('.')[0], get_user_balance(browser)))
 
