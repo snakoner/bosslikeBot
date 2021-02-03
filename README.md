@@ -1,2 +1,3 @@
 # bosslikeBot
-## This pycode is simple liker for https://bosslike.ru site
+## Enabled programs:
+### 1)liker for https://bosslike.ru site
