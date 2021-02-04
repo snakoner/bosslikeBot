@@ -7,6 +7,7 @@
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.proxy import Proxy, ProxyType
 
 import selenium
 import time
@@ -15,6 +16,21 @@ import random
 import datetime
 import os
 import constant
+
+
+def use_proxy(ip, port):
+
+	prox = Proxy()
+	prox.proxy_type = ProxyType.MANUAL
+	prox.http_proxy = "{}:{}".format(ip, port)
+	prox.socks_proxy = "{}:{}".format(ip, port)
+	prox.ssl_proxy = "{}:{}".format(ip, port)
+
+	capabilities = webdriver.DesiredCapabilities.CHROME
+	prox.add_to_capabilities(capabilities)
+
+	return capabilities
+
 
 def rand_time(min, max):
 	'''
@@ -52,7 +68,7 @@ def auth_bosslike(browser, username, password):
 	log.send_keys(username)
 	time.sleep(.2)
 	passw.send_keys(password)
-	time.sleep(.2)
+	time.sleep(60)
 	btn = browser.find_element_by_name('submitLogin')
 	btn.click()
 	pass
@@ -96,8 +112,9 @@ if __name__ == '__main__':
 	opts.headless = True if is_backgr_proc else False
 
 	opts.add_argument("user-agent={}".format(constant.DRIVER_USER_AGENT))
-	browser = webdriver.Chrome(constant.DRIVER_EXEC_PATH, options=opts)
 
+	browser = webdriver.Chrome(constant.DRIVER_EXEC_PATH, options=opts)
+	time.sleep(60)
 	#auth bosslike + instagram
 	bosslike_username, bosslike_password = read_user_data(constant.BOSSLIKE_UDATA_PATH)
 	insta_username, insta_password = read_user_data(constant.INSTAGRAM_UDATA_PATH)
