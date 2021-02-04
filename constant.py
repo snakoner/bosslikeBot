@@ -3,6 +3,7 @@ PY_EXEC_FILENAME_SUBS = 'bosslike_insta_subs.py'
 
 DRIVER_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"
 DRIVER_EXEC_PATH = '/Users/andryusha/Desktop/chromedriver'
+DRIVER_EXEC_PATH_FF = '/Users/andryusha/Desktop/geckodriver'
 DRIVER_MAX_WINDOW_OPENED= 2
 
 BOSSLIKE_URL_AUTH = 'http://bosslike.ru/login/'
